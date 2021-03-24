@@ -1,0 +1,22 @@
+{
+  "artist": "Mac Miller",
+  "backgroundColor": "#644548",
+  "image": "swimming",
+  "released": 2018,
+  "title": "Swimming",
+  "tracks": [
+    { "title": "Come Back to Earth", "seconds": 161 , "audio": "" },
+    { "title": "Hurt Feelings", "seconds": 245 , "audio": "" },
+    { "title": "What's the Use?", "seconds": 288 , "audio": "" },
+    { "title": "Perfecto", "seconds": 215 , "audio": "" },
+    { "title": "Self Care", "seconds": 345 , "audio": "" },
+    { "title": "Wings", "seconds": 250 , "audio": "" },
+    { "title": "Ladders", "seconds": 287 , "audio": "" },
+    { "title": "Small Worlds", "seconds": 271 , "audio": "" },
+    { "title": "Conversation Pt. 1", "seconds": 210 , "audio": "" },
+    { "title": "Dunno", "seconds": 237 , "audio": "" },
+    { "title": "Jet Fuel", "seconds": 345 , "audio": "" },
+    { "title": "2009", "seconds": 347 , "audio": "" },
+    { "title": "So It Goes", "seconds": 312 , "audio": "" }
+  ]
+}

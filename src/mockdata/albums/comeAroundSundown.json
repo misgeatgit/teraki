@@ -1,0 +1,22 @@
+{
+  "artist": "Kings of Leon",
+  "backgroundColor": "#87744a",
+  "image": "comeAroundSundown",
+  "released": 2010,
+  "title": "Come Around Sundown",
+  "tracks": [
+    { "title": "The End", "seconds": 161 , "audio": "" },
+    { "title": "Radioactive", "seconds": 245 , "audio": "" },
+    { "title": "Pyro", "seconds": 288 , "audio": "" },
+    { "title": "Mary", "seconds": 215 , "audio": "" },
+    { "title": "The Face", "seconds": 345 , "audio": "" },
+    { "title": "The Immortals", "seconds": 250 , "audio": "" },
+    { "title": "Back Down South", "seconds": 287 , "audio": "" },
+    { "title": "Beach Side", "seconds": 271 , "audio": "" },
+    { "title": "No Money", "seconds": 210 , "audio": "" },
+    { "title": "Pony Up", "seconds": 237 , "audio": "" },
+    { "title": "Birthday", "seconds": 345 , "audio": "" },
+    { "title": "Mi Amigo", "seconds": 347 , "audio": "" },
+    { "title": "Pickup Truck", "seconds": 287 , "audio": "" }
+  ]
+}
