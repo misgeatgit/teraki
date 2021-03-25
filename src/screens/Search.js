@@ -48,7 +48,7 @@ class Search extends React.Component {
         <Animated.ScrollView
           onScroll={Animated.event([
             { nativeEvent: { contentOffset: { y: scrollY } } }
-          ])}
+          ], { useNativeDriver: false })}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           stickyHeaderIndices={[1]}
