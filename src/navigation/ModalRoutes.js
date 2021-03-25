@@ -1,4 +1,4 @@
-import { StackViewTransitionConfigs } from 'react-navigation';
+import { StackViewTransitionConfigs } from 'react-navigation-stack';
 
 // the screens you add to "iosModalRoutes" will have the modal transition.
 // https://bit.ly/2RmMFRO

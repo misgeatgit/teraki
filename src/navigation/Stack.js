@@ -1,9 +1,8 @@
 import {
   createAppContainer,
-  createStackNavigator,
   createSwitchNavigator
 } from 'react-navigation';
-
+import { createStackNavigator} from 'react-navigation-stack';
 // modal routes (dynamic transitions)
 import ModalRoutes from './ModalRoutes';
 
