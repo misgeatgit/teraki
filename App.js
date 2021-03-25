@@ -1,8 +1,8 @@
 import React from 'react';
 import { StatusBar } from 'react-native';
-import AppLoading from 'expo-app-loading';
 import { Provider } from 'react-redux';
 import { func } from './src/constants';
+import SplashScreen from 'react-native-splash-screen';
 // main navigation stack
 import Stack from './src/navigation/Stack';
 import ExpoAdioPlayer from './src/playback/playback';
@@ -29,7 +29,13 @@ export default class App extends React.Component {
   }
 
   componentDidMount() {
-    const { currentSongData: { title, audio } } = this.state
+      func.loadAssetsAsync().then( () => {
+        const { currentSongData: { title, audio } } = this.state;
+        this.setState({ isLoading: false }); 
+        SplashScreen.hide();
+      }).catch( err => {
+        console.warn;
+      });
   }
 
 
@@ -74,17 +80,6 @@ export default class App extends React.Component {
   render() {
     const { currentSongData, isLoading, toggleTabBar } = this.state;
     const eventSubscribers = ExpoAdioPlayer.eventSubscribers;
-    if (isLoading) {
-      return (
-      <Provider store={store}>
-        <AppLoading
-          onFinish={() => this.setState({ isLoading: false })}
-          startAsync={func.loadAssetsAsync}
-          onError={console.warn}
-        />
-        </Provider>
-      );
-    }
 
     return (
       <Provider store={store}>
