@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  AsyncStorage,
   StyleSheet,
   Text,
   TextInput,
@@ -8,6 +7,7 @@ import {
   View,
 } from 'react-native';
 
+import AsyncStorage from '@react-native-community/async-storage';
 
 class SignInScreen extends React.Component {
     constructor(props){
