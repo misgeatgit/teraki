@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Image, Slider, StyleSheet, Text, View } from 'react-native';
-//import {Slider} from '@react-native-community/slider'
+import { Image, StyleSheet, Text, View } from 'react-native';
+import Slider from '@react-native-community/slider'
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { colors, device, func, gStyle, images } from '../constants';
 
