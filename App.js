@@ -7,6 +7,8 @@ import SplashScreen from 'react-native-splash-screen';
 import Stack from './src/navigation/Stack';
 import ExpoAdioPlayer from './src/playback/playback';
 import store from './src/Redux';
+import {getBooks} from './src/data/AudioBook';
+import SQLite from 'react-native-sqlite-storage';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -29,11 +31,15 @@ export default class App extends React.Component {
   }
 
   componentDidMount() {
-      func.loadAssetsAsync().then( () => {
+      func.loadAssetsAsync()
+      .then(() => {getBooks()})
+      .then( () => {
         const { currentSongData: { title, audio } } = this.state;
         this.setState({ isLoading: false }); 
+        SQLite.DEBUG = true;
         SplashScreen.hide();
-      }).catch( err => {
+      })
+      .catch( err => {
         console.warn;
       });
   }

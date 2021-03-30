@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
-import * as SQLite from 'expo-sqlite';
-import { createBookDBSQLString } from '../Settings';
+import  SQLite from 'react-native-sqlite-storage';
+import { createBookTable, createAudiofilesTable, createFrontcoverTable } from '../Settings';
 import { booksLoaded } from './Actions';
 
 const books = require('../mockdata/books.json');
@@ -34,10 +34,25 @@ const executeSql = async (sql, params = []) => {
     })
   );
 };
+
+const ExecuteQuery = (db, queryParamPairArray) => new Promise((resolve, reject) => {
+  db.transaction((tx) => {
+    queryParamPairArray.forEach((queryParamPair) => {
+      const query = queryParamPair.query;
+      const params = queryParamPair.params;
+      tx.executeSql(query, params, (tx, results) => {
+        resolve(results);
+      },
+        (error) => {
+          reject(error);
+        });
+    });
+  });
+  });
+
 async function persistBook(books) {
   console.log(`[info] persisting books.`);
-  const insertQuery1 = `INSERT INTO book (id, author, title, synopsis) values (?, ?, ?, ?)`;
-  const insertQuery = 'SELECT * FROM book;';
+  const insertQuery = `INSERT INTO book (id, author, title, synopsis) values (?, ?, ?, ?)`;
   Object.values(books).forEach(async book => {
     if (!book.author) book.author = 'various';
     if (!book.title) book.title = 'not given';
@@ -52,45 +67,21 @@ async function persistBook(books) {
       } SYNOPSIS: ${book.synopsis} id:${JSON.stringify(id)}.`
     );
     try {
-      const status = await executeSql(createBookDBSQLString);
-      console.log(`[info] created ${status}`);
-      const result = await executeSql(insertQuery);
-      console.log(`[info] select result ${result}`);
+      const db = SQLite.openDatabase('testing.db');
+      const atomicCreateQueries = [{ query: createBookTable, params: [] },
+      { query: createAudiofilesTable, params: [] },
+      { query: createFrontcoverTable, params: [] } ]
+      const status = await ExecuteQuery(db, atomicCreateQueries);
+      console.log(`[info] created ${JSON.stringify(status)}`);
+
+      const atomicInsertQueries = [
+        {query: insertQuery, params: [id, book.author, book.title, book.synopsis]}
+      ]
+      const result = await ExecuteQuery(db, atomicInsertQueries);
+      console.log(`[info] select result ${JSON.stringify(result)}`);
     } catch (e) {
       console.log(`[error] ${JSON.stringify(e)}`);
     }
-    /* db.transaction(
-      tx => {
-        tx.executeSql(
-          createBookDBSQLString,
-          [],
-          (_, { rows }) => console.log(`[info] DB created.`),
-          error =>
-            console.log(
-              `[error] error in creating db ${JSON.stringify(error)}.`
-            )
-        );
-        tx.executeSql(
-          insertQuery,
-          [],
-          //[id, book.author, book.title, book.synopsis],
-          (_, { rows }) => console.log(`[info] book added.`),
-          (_,error) =>
-            console.log(
-              `[error] book inserting failed. ${JSON.stringify(error)}.`
-            )
-        );
-      },
-      error =>
-        console.log(`[error] Transaction failed ${JSON.stringify(error)}`),
-      () => console.log(`[info] transaction succeeded.`)
-    ); */
-
-    /* db.exec([{ sql: insertQuery, args: [] }], false, (error, result) =>
-      error
-        ? console.log(`[error] query error ${JSON.stringify(error)}`)
-        : console.log(`[info] query succeeded with ${JSON.stringify(result)}`)
-    ); */
   });
 }
 
@@ -117,18 +108,16 @@ async function persistChapter(chapter, bookId) {
 
 async function persistFrontCover(url, bookId) {
   console.log(`[info] persisting front cover url:${url}`);
-  const path = await download(url);
-  const insertQuery = `INSERT INTO frontcover (path, url, book_id) values (?, ?, ?)`;
-  db.transaction(
-    tx => {
-      tx.executeSql(insertQuery, [path, url, bookId]);
-    },
-    error => {
-      throw error;
-    },
-    null
-  );
-  return path;
+  try {
+    const path = await download(url);
+    const insertQuery = `INSERT INTO frontcover (path, url, book_id) values (?, ?, ?)`;
+    const db = SQLite.openDatabase('testing.db');
+    const result = await ExecuteQuery(db, [{ query: insertQuery, params: [path, url, bookId] }]);
+    console.log(`[info] select result ${JSON.stringify(result)}`);
+    return path;
+  } catch (e) {
+    console.log(`[error] Error ${JSON.stringify(e)}`);
+  }
 }
 
 async function generateBookId(book) {
@@ -219,25 +208,15 @@ function createAudioBooks(data) {
 }
 
 /* Called on new login */
-function getBooks() {
+async function getBooks() {
   console.log(`[info] getBook: persisting books to db.`);
-  const bookz = [
-    {
-      author: `John Doe3`,
-      title: `The adventure of John Doe2`,
-      synopsis: `John's account of his greatest adventures.`
-    }
-  ];
-  persistBook(bookz);
-  // console.log(`url= ${getLocalURL(bookz, {})}`);
-  return;
   const localBooks = Object.values(books).map(async book => {
     const url = book.front_cover;
-    console.log(`[info]: Persisting ${url}`);
     const id = await generateBookId(book);
+    console.log(`[info]: persisting book id: ${id}`);
     const path = await persistFrontCover(url, id);
     console.log(`[info] persisted to ${path}`);
-    return { ...book, front_cover_path: path };
+    return { ...book, id: id, front_cover_path: path };
   });
 
   booksLoaded(localBooks);
