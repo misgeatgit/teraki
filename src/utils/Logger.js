@@ -6,7 +6,7 @@ export const logLevel = {
 }
 
 class Logger {
-    constructor(level=logLevel.INFO) {
+    constructor(level=logLevel.DEBUG) {
         this.level = level;
     }
 
@@ -16,30 +16,30 @@ class Logger {
 
     info(message) {
         if (this.level === logLevel.INFO || this.level === logLevel.DEBUG) {
-            console.log(`[${logLevel.INFO}] message`);
+            console.log(`[${logLevel.INFO}] ${message}`);
         }
     }
 
     warn(message) {
         if (this.level === logLevel.WARN || this.level === logLevel.DEBUG) {
-            console.log(`[${logLevel.WARN}] message`);
+            console.log(`[${logLevel.WARN}] ${message}`);
         }
 
     }
 
     error(message) {
         if (this.level === logLevel.ERROR || this.level === logLevel.DEBUG) {
-            console.log(`[${logLevel.ERROR}] message`);
+            console.log(`[${logLevel.ERROR}] ${message}`);
         }
 
     }
 
     debug(message) {
         if (this.level === logLevel.DEBUG) {
-            console.log(`[${logLevel.DEBUG}] message`);
+            console.log(`[${logLevel.DEBUG}] ${message}`);
         }
 
     }
 }
 
-export default const logger = new Logger();
+export default logger = new Logger();

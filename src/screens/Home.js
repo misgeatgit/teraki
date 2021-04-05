@@ -1,7 +1,10 @@
 import React from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
+import {connect} from 'react-redux';
 import { FontAwesome } from '@expo/vector-icons';
 import { colors, device, gStyle } from '../constants';
+import { withNavigation } from 'react-navigation';
+import logger from '../utils/Logger';
 
 // components
 import AlbumsHorizontal from '../components/AlbumsHorizontal';
@@ -18,11 +21,19 @@ class Home extends React.Component {
     this.state = {
       scrollY: new Animated.Value(0)
     };
+
+  }
+
+  filterBook = (tagline, books) => {
+    logger.info(`Getting books with tagline ${tagline}`);
+    const filtered = books.filter( book => book.tagline === tagline);
+    logger.info(`Found ${filtered.length} books with this tagline.`)
+    return filtered;
   }
 
   render() {
     const { scrollY } = this.state;
-
+    const { books } = this.props;
     const opacityIn = scrollY.interpolate({
       inputRange: [0, 128],
       outputRange: [0, 1],
@@ -59,19 +70,19 @@ class Home extends React.Component {
           <View style={gStyle.spacer16} />
 
           <AlbumsHorizontal
-            data={recentlyPlayed}
+            books={this.filterBook('Recently opened', books)}
             heading="በቅርብ የተከፈቱ"
             tagline="Recently viewed"
           />
 
           <AlbumsHorizontal
-            data={heavyRotation}
+            books={this.filterBook('Popular this month', books)}
             heading="በብዙዎች የተነበቡ"
             tagline="Popular this month."
           />
 
           <AlbumsHorizontal
-            data={jumpBackIn}
+            books={this.filterBook('Suggestions', books)}
             heading="ምርጫዎቻችን"
             tagline="Books you may like."
           />
@@ -102,5 +113,13 @@ const styles = StyleSheet.create({
     zIndex: 10
   }
 });
+const mapStateProps = (state) => {
+  logger.info('Books update received from redux store.');
+  const {audioBook: {books} } = state;
+  books.forEach(book => {
+   logger.info(`---COVER_URI: ${book.front_cover_path}`)
+  });
+  return {books};
+}
 
-export default Home;
+export default withNavigation(connect(mapStateProps)(Home));

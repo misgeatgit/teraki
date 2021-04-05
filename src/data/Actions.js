@@ -46,7 +46,7 @@ const updatePlayTime = time => {
 const booksLoaded = books => {
   store.dispatch({
     type: BOOKS_LOADED,
-    books
+    books: books
   });
 };
 

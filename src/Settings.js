@@ -21,15 +21,39 @@ export const createFrontcoverTable = 'CREATE TABLE IF NOT EXISTS frontcover (id 
   INTEGER PRIMARY KEY, path  TEXT NOT NULL, url  TEXT NOT NULL, book_id  TEXT not NULL, \
   FOREIGN KEY (book_id) REFERENCES book(id) ON DELETE CASCADE);';
 
-function setUpDB() {
-  const db = SQLite.openDatabase(AnbabianDB);
-  console.log(`[info] Setting up db.`);
-  db.transaction(tx => {
-    tx.executeSql(createBookDBSQLString, [], null, error => {
-      throw error;
+const db = SQLite.openDatabase(
+  {
+    name: 'testing.db',
+    location: 'default',
+  },
+  () => { },
+  error => {
+    console.log("ERROR: " + error);
+  }
+);
+
+const execQuery = (db, queryParamPairArray) => new Promise((resolve, reject) => {
+  db.transaction((tx) => {
+    queryParamPairArray.forEach((queryParamPair) => {
+      const query = queryParamPair.query;
+      const params = queryParamPair.params;
+      tx.executeSql(query, params, (tx, results) => {
+        resolve(results);
+      },
+        (error) => {
+          reject(error);
+        });
     });
   });
-  console.log('Database created successfully!');
+  });
+
+const initDB = async () => {
+  const atomicCreateQueries = [{ query: createBookTable, params: [] },
+  { query: createAudiofilesTable, params: [] },
+  { query: createFrontcoverTable, params: [] }]
+  const status = await execQuery(db, atomicCreateQueries);
+  console.log(`*****Created DB ${JSON.stringify(status)}`);
 }
 
-export { BASE_URL, ENDPOINTS, setUpDB };
+
+export { BASE_URL, db, execQuery, ENDPOINTS, initDB};

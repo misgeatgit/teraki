@@ -1,3 +1,4 @@
+import { ActionSheetIOS } from 'react-native';
 import {
   AUDIO_SELECTED,
   AUDIO_LOADED,
@@ -6,6 +7,8 @@ import {
   PLAY_PAUSE_STATUS,
   UPDATE_PLAY_TIME
 } from '../ActionTypes';
+
+import logger from '../utils/Logger';
 
 // States shared by playback screens
 const INITIAL_STATE = {
@@ -43,7 +46,10 @@ const AudioBookReducer = (state = INITIAL_STATE, action) => {
         selectedBook: { ...action.message.book }
       };
     case BOOKS_LOADED:
-      return { ...state, books: action.books };
+      logger.info(`New book ${JSON.stringify(action.books)}`)
+      updatedBookList = [...state.books, ...action.books]
+      logger.info(`BookList updated. \n ${JSON.stringify(updatedBookList.map(book => {return book.title;} ))}`)
+      return { ...state, books: updatedBookList };
     case PLAY_PAUSE_STATUS:
       return {
         ...state,

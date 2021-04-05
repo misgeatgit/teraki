@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
@@ -9,33 +10,32 @@ import {
   View
 } from 'react-native';
 import { withNavigation } from 'react-navigation';
-import { connect } from 'react-redux';
 import { colors, gStyle, images } from '../constants';
+import {generateBookId, getLocalCoverImageURL} from '../data/AudioBook';
 
-const AlbumsHorizontal = ({ books, data, heading, navigation, tagline }) => (
+const AlbumsHorizontal = ({ books, heading, navigation, tagline }) => (
   <View style={styles.container}>
     {heading && <Text style={styles.heading}>{heading}</Text>}
     {tagline && <Text style={styles.tagline}>{tagline}</Text>}
-
     <FlatList
       contentContainerStyle={styles.containerContent}
       data={books}
       horizontal
-      keyExtractor={({ id }) => id.toString()}
-      renderItem={({ item }) => (
+      keyExtractor={ (item, index) => generateBookId(item)+index}
+      renderItem={({item}) => (
         <TouchableOpacity
           activeOpacity={gStyle.activeOpacity}
           hitSlop={{ top: 10, left: 10, bottom: 10, right: 10 }}
-          onPress={() => navigation.navigate('Album', { title: item.title })}
+          onPress={() => {
+          navigation.navigate('Album', { title: item.title });
+          }}
           style={styles.item}
         >
           <View style={styles.image}>
-            {item.front_cover_path && (
               <Image
                 source={{ uri: item.front_cover_path }}
                 style={styles.image}
               />
-            )}
           </View>
           <Text style={styles.title}>{item.title}</Text>
         </TouchableOpacity>
@@ -52,9 +52,8 @@ AlbumsHorizontal.defaultProps = {
 
 AlbumsHorizontal.propTypes = {
   // required
-  data: PropTypes.array.isRequired,
+  books: PropTypes.array.isRequired,
   navigation: PropTypes.object.isRequired,
-  books: PropTypes.object.isRequired,
   // optional
   heading: PropTypes.string,
   tagline: PropTypes.string
@@ -97,9 +96,5 @@ const styles = StyleSheet.create({
   }
 });
 
-const mapStateProps = state => {
-  console.log(JSON.stringify(state.audioBook.books));
-  return { books: state.audioBook.books };
-};
+export default withNavigation(AlbumsHorizontal);
 
-export default withNavigation(connect(mapStateProps)(AlbumsHorizontal));

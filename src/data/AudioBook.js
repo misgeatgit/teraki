@@ -1,7 +1,10 @@
 import * as FileSystem from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
-import  SQLite from 'react-native-sqlite-storage';
-import { createBookTable, createAudiofilesTable, createFrontcoverTable } from '../Settings';
+import logger from '../utils/Logger';
+import {
+  db,
+  execQuery
+} from '../Settings';
 import { booksLoaded } from './Actions';
 
 const books = require('../mockdata/books.json');
@@ -21,37 +24,9 @@ async function download(url) {
       });
   });
 }
-const executeSql = async (sql, params = []) => {
-  const db = SQLite.openDatabase('test.db');
-  return new Promise((resolve, reject) =>
-    db.transaction(tx => {
-      tx.executeSql(
-        sql,
-        params,
-        (_, { rows }) => resolve(rows._array),
-        (_, error) => reject(error)
-      );
-    })
-  );
-};
-
-const ExecuteQuery = (db, queryParamPairArray) => new Promise((resolve, reject) => {
-  db.transaction((tx) => {
-    queryParamPairArray.forEach((queryParamPair) => {
-      const query = queryParamPair.query;
-      const params = queryParamPair.params;
-      tx.executeSql(query, params, (tx, results) => {
-        resolve(results);
-      },
-        (error) => {
-          reject(error);
-        });
-    });
-  });
-  });
 
 async function persistBook(books) {
-  console.log(`[info] persisting books.`);
+  logger.info(`Persisting books.`);
   const insertQuery = `INSERT INTO book (id, author, title, synopsis) values (?, ?, ?, ?)`;
   Object.values(books).forEach(async book => {
     if (!book.author) book.author = 'various';
@@ -61,62 +36,50 @@ async function persistBook(books) {
     }
 
     const id = await generateBookId(book);
-    console.log(
-      `[info] persisting book by ${book.author} TITLE: ${
+    logger.info(
+      `Persisting book by ${book.author} TITLE: ${
         book.title
       } SYNOPSIS: ${book.synopsis} id:${JSON.stringify(id)}.`
     );
     try {
-      const db = SQLite.openDatabase('testing.db');
-      const atomicCreateQueries = [{ query: createBookTable, params: [] },
-      { query: createAudiofilesTable, params: [] },
-      { query: createFrontcoverTable, params: [] } ]
-      const status = await ExecuteQuery(db, atomicCreateQueries);
-      console.log(`[info] created ${JSON.stringify(status)}`);
-
       const atomicInsertQueries = [
-        {query: insertQuery, params: [id, book.author, book.title, book.synopsis]}
+        { query: insertQuery, params: [id, book.author, book.title, book.synopsis] }
       ]
-      const result = await ExecuteQuery(db, atomicInsertQueries);
-      console.log(`[info] select result ${JSON.stringify(result)}`);
+      const result = await execQuery(db, atomicInsertQueries);
+      logger.info(`Insert result ${JSON.stringify(result)}`);
     } catch (e) {
-      console.log(`[error] ${JSON.stringify(e)}`);
+      logger.error(`${JSON.stringify(e)}`);
     }
   });
 }
 
 async function persistChapter(chapter, bookId) {
+  logger.info(`Persisting Chapter.`);
   const path = await download(chapter.audio_file);
-  const insertQuery = `INSERT INTO audiofiles (path, url, name, book_id) values (?, ?, ?, ?)`;
-  db.transaction(
-    tx => {
-      tx.executeSql(insertQuery, [
-        path,
-        chapter.url,
-        chapter.audio_file,
-        bookId
-      ]);
-    },
-    () => console.log(`[info] audiofile added to db.`),
-    (t, error) =>
-      console.log(
-        `[error] audiofile inserting failed. ${JSON.stringify(error)}.`
-      )
-  );
-  return path;
+  const insertAudioFile = `INSERT INTO audiofiles (path, url, name, book_id) values (?, ?, ?, ?)`;
+  try {
+    const atomicInsertQuery = [{
+      query: insertAudioFile,
+      params: [path, chapter.audio_file, chapter.name, bookId]
+    }];
+    const result = await execQuery(db, atomicInsertQuery);
+    logger.info(`---Select result ${JSON.stringify(result)}`);
+    return path;
+  } catch (e) {
+    logger.error(`---${JSON.stringify(e)}`);
+  }
 }
 
 async function persistFrontCover(url, bookId) {
-  console.log(`[info] persisting front cover url:${url}`);
+  logger.info(`Persisting front cover url:${url}`);
   try {
     const path = await download(url);
     const insertQuery = `INSERT INTO frontcover (path, url, book_id) values (?, ?, ?)`;
-    const db = SQLite.openDatabase('testing.db');
-    const result = await ExecuteQuery(db, [{ query: insertQuery, params: [path, url, bookId] }]);
-    console.log(`[info] select result ${JSON.stringify(result)}`);
+    const result = await execQuery(db, [{ query: insertQuery, params: [path, url, bookId] }]);
+    logger.info(`---Select result ${JSON.stringify(result)}`);
     return path;
   } catch (e) {
-    console.log(`[error] Error ${JSON.stringify(e)}`);
+    logger.error(`---${JSON.stringify(e)}`);
   }
 }
 
@@ -133,41 +96,91 @@ async function generateBookId(book) {
      @param chapter {audio_file:'', chapter:''}
      @returns local url
     */
-async function getLocalURL(book, chapter) {
-  let url = '';
-  const fkey = await generateBookId(book);
-  const query = `SELECT * FROM audiofiles WHERE book_id=${fkey}`;
-  // See resultsetObject here https://docs.expo.io/versions/latest/sdk/sqlite/#transaction--objects
-  db.transaction(tx => {
-    tx.executeSql(
-      query,
-      [],
-      (_, { rows }) => {
-        if (rows.length < 1) {
-          console.log(`[info] audiofile not found`);
-          /* let r = '';
-          persistChapter(chapter, fkey)
-            .then(path => {
-              r = path;
-            })
-            .catch(error => {
-              throw error;
-            });
-          url = r; */
-        } else {
-          url = rows.item(0).path;
-          console.log(`[info] url: ${rows.item(0).path}`);
-        }
-      },
-      () => console.log(`[info] transaction succeeded.`),
-      error => {
-        throw error;
-      }
-    );
-  });
-
-  return url;
+async function getLocalAudioURL(book, chapter) {
+  try {
+    const bookId = await generateBookId(book);
+    const selectChapterQuery = `SELECT * FROM audiofiles WHERE book_id=${bookId}`;
+    const result = await execQuery(db, [{ query: selectChapterQuery, params: [] }]);
+    let path = '';
+    if (result.rows.length < 1) {
+      logger.info(`AudioFile not found in local directory.
+    Downloading and persisting to local storage.`);
+      path = await persistChapter(chapter, bookId);
+    } else {
+      logger.info('Audiofile found in local resource dir.');
+      path = result.rows[0].item[0];
+    }
+    
+    return path;
+  } catch (e) {
+    logger.error(`${JSON.stringify(e)}`);
+  }
 }
+
+async function getLocalCoverImageURL(book) {
+  const funcName = 'getLocalCoverImageURL' 
+  logger.info(`[${funcName}] Fetching local cover image url.`);
+ try {
+    const bookId = await generateBookId(book);
+    const selectChapterQuery = `SELECT * FROM frontcover WHERE book_id='${bookId}'`;
+    const result = await execQuery(db, [{ query: selectChapterQuery, params: [] }]);
+    var path = '';
+    if (result.rows.length < 1) {
+      logger.info(`---[${funcName}] Cover image not found in local directory.
+    Downloading and persisting to local storage.`);
+      path = await persistFrontCover(book.front_cover, bookId);
+    } else {
+      path = result.rows.item(0).path;
+      logger.info(`---[${funcName}] Cover image found in local resource dir. ${JSON.stringify(path)}`);
+    }
+    return path;
+  } catch (e) {
+    logger.error(`[${funcName}] ${JSON.stringify(e)}`);
+  }
+
+}
+
+async function downloadFrontCover(books, downloadNotify) {
+  const funcName = 'downloadFrontCover';
+  logger.info(`[${funcName}] Persisting books to db.`);
+  try {
+    const localBooks = Object.values(books).map(async book => {
+      const path = await getLocalCoverImageURL(book);
+      logger.info(`---[${funcName}] Persisted to ${path}`);
+      const newBook = { ...book, front_cover_path: path };
+      downloadNotify(newBook);
+      return newBook;
+    });
+    return localBooks;
+  } catch (e) {
+    logger.error(`[${funcName}] ${JSON.stringify(e)}`);
+  }
+}
+
+function bookCoverDownloaded(book) {
+  logger.info(`Updating bookList in redux store.`);
+  booksLoaded([book]); 
+}
+
+async function preFetch(N) {
+ let booksByTagline = {}
+ books.forEach(book => {
+   if(booksByTagline[book.tagline] && booksByTagline[book.tagline].length < N) {
+     booksByTagline[book.tagline].push(book);
+   } else if(!booksByTagline[book.tagline]) {
+     booksByTagline[book.tagline] = [book];
+   }
+ });
+ let prefetchs = []
+ Object.values(booksByTagline).forEach(books => prefetchs.push(...books));
+ prefetchs = await downloadFrontCover(prefetchs, bookCoverDownloaded);
+
+}
+
+async function fetchAll() {
+    let books = await downloadFrontCover(books, bookCoverDownloaded);
+}
+
 
 export default class AudioBook {
   constructor(title, author, frontCover, synopsis, kwargs) {
@@ -207,21 +220,6 @@ function createAudioBooks(data) {
   return books;
 }
 
-/* Called on new login */
-async function getBooks() {
-  console.log(`[info] getBook: persisting books to db.`);
-  const localBooks = Object.values(books).map(async book => {
-    const url = book.front_cover;
-    const id = await generateBookId(book);
-    console.log(`[info]: persisting book id: ${id}`);
-    const path = await persistFrontCover(url, id);
-    console.log(`[info] persisted to ${path}`);
-    return { ...book, id: id, front_cover_path: path };
-  });
-
-  booksLoaded(localBooks);
-}
-
 function fetchMockData() {
   // eslint-disable-next-line global-require
   // TODO donot bundle mockdata in production.
@@ -229,4 +227,11 @@ function fetchMockData() {
   return createAudioBooks(data);
 }
 
-export { download, fetchMockData, getBooks, getLocalURL };
+export {
+  download,
+  fetchMockData,
+  generateBookId,
+  getLocalCoverImageURL,
+  preFetch,
+  fetchAll
+};
