@@ -9,11 +9,6 @@ import logger from '../utils/Logger';
 // components
 import AlbumsHorizontal from '../components/AlbumsHorizontal';
 
-// mock data
-import heavyRotation from '../mockdata/heavyRotationAM';
-import jumpBackIn from '../mockdata/jumpBackIn';
-import recentlyPlayed from '../mockdata/recentlyPlayed';
-
 class Home extends React.Component {
   constructor(props) {
     super(props);

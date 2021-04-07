@@ -19,14 +19,12 @@ import LineItemSong from '../components/LineItemSong';
 import TouchIcon from '../components/TouchIcon';
 import TouchText from '../components/TouchText';
 
-// mock data
-import albums from '../mockdata/albums';
-
 class Album extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
+      book: null,
       album: null,
       downloaded: false,
       scrollY: new Animated.Value(0),
@@ -44,12 +42,13 @@ class Album extends React.Component {
 
     const { currentSongData } = screenProps;
     // const albumTitle = navigation.getParam('title', 'ALBUM NOT FOUND?!');
-    const albumTitle = navigation.getParam('title', 'Extraordinary Machine');
+    const book = navigation.getParam('book', null);
 
     this.setState({
-      album: albums[albumTitle] || null,
+      book: book,
+      album: book.book_chapter || null,
       song: currentSongData.title,
-      title: albumTitle
+      title: book.title
     });
   }
 
@@ -113,7 +112,7 @@ class Album extends React.Component {
       navigation,
       screenProps: { toggleTabBarState, setToggleTabBar }
     } = this.props;
-    const { album, downloaded, scrollY, song, title } = this.state;
+    const { album, book, downloaded, scrollY, song, title } = this.state;
 
     // album data not set?
     if (album === null) {
@@ -154,7 +153,7 @@ class Album extends React.Component {
           <Animated.View
             style={[styles.headerLinear, { opacity: opacityHeading }]}
           >
-            <LinearGradient fill={album.backgroundColor} height={89} />
+            <LinearGradient fill={'#636e35'} height={89} />
           </Animated.View>
           <View style={styles.header}>
             <TouchIcon
@@ -162,7 +161,7 @@ class Album extends React.Component {
               onPress={() => navigation.goBack(null)}
             />
             <Animated.View style={{ opacity: opacityShuffle }}>
-              <Text style={styles.headerTitle}>{album.title}</Text>
+              <Text style={styles.headerTitle}>{title}</Text>
             </Animated.View>
             <TouchIcon
               icon={<Feather color={colors.white} name="more-horizontal" />}
@@ -179,19 +178,19 @@ class Album extends React.Component {
 
         <View style={styles.containerFixed}>
           <View style={styles.containerLinear}>
-            <LinearGradient fill={album.backgroundColor} />
+            <LinearGradient fill={'#636e35'}/>
           </View>
           <View style={styles.containerImage}>
-            <Image source={images[album.image]} style={styles.image} />
+            <Image source={{ uri: book.front_cover_path }} style={styles.image} />
           </View>
           <View style={styles.containerTitle}>
             <Text ellipsizeMode="tail" numberOfLines={1} style={styles.title}>
-              {album.title}
+              {title}
             </Text>
           </View>
           <View style={styles.containerAlbum}>
             <Text style={styles.albumInfo}>
-              {`Album by ${album.artist} · ${album.released}`}
+              {`Album by ${book.author} · ${book.year}`}
             </Text>
           </View>
         </View>
@@ -216,7 +215,7 @@ class Album extends React.Component {
               <LinearGradient fill={colors.black20} height={50} />
             </Animated.View>
             <View style={styles.containerShuffle}>
-              <Text style={styles.btnText}>90 Birr</Text>
+              <Text style={styles.btnText}>{book.price}</Text>
             </View>
             <View style={styles.containerShuffle}>
               <TouchText
@@ -239,20 +238,20 @@ class Album extends React.Component {
               />
             </View>
 
-            {album.tracks &&
-              album.tracks.map((track, index) => (
+            {album &&
+              album.map((chapter, index) => (
                 <LineItemSong
-                  active={song === track.title}
+                  active={song === chapter.chapter}
                   downloaded={downloaded}
                   key={index.toString()}
                   onPress={this.changeSong}
                   songData={{
-                    album: album.title,
-                    artist: album.artist,
-                    image: album.image,
-                    audio: track.audio,
-                    length: track.seconds,
-                    title: track.title
+                    album: book.title,
+                    artist: book.author,
+                    image: book.front_cover_path,
+                    audio: chapter.audio_file,
+                    length: 0,
+                    title: chapter.chapter
                   }}
                 />
               ))}

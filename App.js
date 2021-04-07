@@ -34,12 +34,11 @@ export default class App extends React.Component {
   componentDidMount() {
       func.loadAssetsAsync()
       .then(() => {initDB(); })
-      .then(() => { preFetch(4);})
+      .then(() => { preFetch(100);})
       .then( () => {
         const { currentSongData: { title, audio } } = this.state;
         this.setState({ isLoading: false }); 
         SQLite.DEBUG = true;
-        //fetchAll(); // Start fetching the remaining in the background.
         SplashScreen.hide();
       })
       .catch( err => {

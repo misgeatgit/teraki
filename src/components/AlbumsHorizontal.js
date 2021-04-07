@@ -13,13 +13,15 @@ import { withNavigation } from 'react-navigation';
 import { colors, gStyle, images } from '../constants';
 import {generateBookId, getLocalCoverImageURL} from '../data/AudioBook';
 
-const AlbumsHorizontal = ({ books, heading, navigation, tagline }) => (
+const AlbumsHorizontal = ({ books, heading, navigation, tagline, endReachedCB }) => (
   <View style={styles.container}>
     {heading && <Text style={styles.heading}>{heading}</Text>}
     {tagline && <Text style={styles.tagline}>{tagline}</Text>}
     <FlatList
       contentContainerStyle={styles.containerContent}
       data={books}
+      onEndReachedThreshold={0.7}
+      onEndReached={endReachedCB}
       horizontal
       keyExtractor={ (item, index) => generateBookId(item)+index}
       renderItem={({item}) => (
@@ -27,7 +29,7 @@ const AlbumsHorizontal = ({ books, heading, navigation, tagline }) => (
           activeOpacity={gStyle.activeOpacity}
           hitSlop={{ top: 10, left: 10, bottom: 10, right: 10 }}
           onPress={() => {
-          navigation.navigate('Album', { title: item.title });
+          navigation.navigate('Album', { book: item });
           }}
           style={styles.item}
         >
