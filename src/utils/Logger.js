@@ -1,4 +1,5 @@
 export const logLevel = {
+    FINE: 'FINE',
     INFO: 'INFO',
     WARN: 'WARN',
     ERROR: 'ERROR',
@@ -12,6 +13,12 @@ class Logger {
 
     setLevel(level) {
         this.level = level;
+    }
+
+    fine(message) {
+        if (this.level === logLevel.FINE || this.level === logLevel.DEBUG) {
+            console.log(`[${logLevel.FINE}] ${message}`);
+        }
     }
 
     info(message) {
@@ -28,7 +35,7 @@ class Logger {
     }
 
     error(message) {
-        if (this.level === logLevel.ERROR || this.level === logLevel.DEBUG) {
+        if (this.level === logLevel.ERROR || this.level === logLevel.INFO || this.level === logLevel.DEBUG) {
             console.log(`[${logLevel.ERROR}] ${message}`);
         }
 
