@@ -11,6 +11,7 @@ import store from './src/Redux';
 import {initDB} from './src/Settings';
 import {preFetch} from './src/data/AudioBook';
 import SQLite from 'react-native-sqlite-storage';
+import { audioLoaded } from './src/data/Actions';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -36,15 +37,15 @@ export default class App extends React.Component {
   componentDidMount() {
     const init = async () => {
       try {
-        Logger.setLevel(logLevel.ERROR);
-        SQLite.DEBUG = true;
-        Logger.info(`[App.componentDidMount] loading resources.`)
+        SQLite.DEBUG = __DEV__ ? true : false;
+        Logger.setLevel(logLevel.INFO);
+        Logger.info(`[App.componentDidMount] loading resources.`);
         await func.loadAssetsAsync();
         await initDB();
         await preFetch(100);
         await AudioPlayer.init();
       } catch (e) {
-        Logger.info(`[App.componentDidMount] ${JSON.stringify(e)}.`);
+        Logger.error(`[App.componentDidMount] ${JSON.stringify(e)}.`);
       }
     };
 
@@ -74,6 +75,10 @@ export default class App extends React.Component {
   }
 
   changeSong(data) {
+    Logger.info(`[App.js changeSong] Chapter changed to ${data.chapter.chapter}`);
+    // Set AudioPlayer sates.
+    audioLoaded({isLoading: false, isLoaded: false, isPlaying: false});
+    // Load current chapter.
     AudioPlayer.AudioPlayerAddChpater(data.book, data.chapter);
     this.setState({
       currentSongData: data
