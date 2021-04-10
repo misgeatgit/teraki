@@ -4,6 +4,8 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider'
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { colors, device, func, gStyle, images } from '../constants';
+import { withNavigation } from 'react-navigation';
+import {connect} from 'react-redux';
 
 // components
 import ModalHeader from '../components/ModalHeader';
@@ -14,50 +16,33 @@ import AudioPlayer from '../playback/AudioPlayer';
 class ModalMusicPlayer extends React.Component {
   constructor(props) {
     super(props);
-    const { eventSubscribers, paused } = this.props.navigation.state.params;
-    eventSubscribers.playBackLoaded.push(this.toggleLoading);
-
     this.state = {
       favorited: false,
-      paused: paused
     };
     this.toggleFavorite = this.toggleFavorite.bind(this);
     this.togglePlay = this.togglePlay.bind(this);
   }
 
-  toggleLoading(loaded) {
-    //this.setState(() => ({ isLoaded: loaded }));
-    // Reset play
-    this.setState(() => ({ paused: true }));
-  }
-
-  _onPlayPausePressed = () => {
-    if (this.state.paused) {
-      AudioPlayer.pause();
-    } else {
-      AudioPlayer.play();
-    }
-  };
   toggleFavorite() {
     this.setState(prev => ({
       favorited: !prev.favorited
     }));
   }
 
-  togglePlay() {
-    this.setState(prev => ({
-      paused: !prev.paused
-    }), this._onPlayPausePressed);
+  togglePlay(isPlaying) {
+     if(isPlaying) {
+       AudioPlayer.pause();
+     } else {
+       AudioPlayer.play();
+     }
   }
 
   render() {
     const { navigation, screenProps } = this.props;
     const { currentSongData } = screenProps;
-    const { favorited, paused } = this.state;
+    const { isPlaying } = this.props.selectedAudio;
 
-    const favoriteColor = favorited ? colors.brandPrimary : colors.white;
-    const favoriteIcon = favorited ? 'heart' : 'heart-o';
-    const iconPlay = paused ? 'play-circle' : 'pause-circle';
+    const iconPlay = isPlaying ? 'pause-circle' : 'play-circle';
 
     const timePast = func.formatTime(0);
     const timeLeft = func.formatTime(currentSongData.length);
@@ -72,7 +57,7 @@ class ModalMusicPlayer extends React.Component {
         />
 
         <View style={gStyle.p3}>
-          <Image source={images[currentSongData.image]} style={styles.image} />
+          <Image source={{uri: currentSongData.book.front_cover_path}} style={styles.image} />
 
           <View style={[gStyle.flexRowSpace, styles.containerDetails]}>
             <View style={styles.containerSong}>
@@ -105,7 +90,7 @@ class ModalMusicPlayer extends React.Component {
                 <TouchIcon
                   icon={<FontAwesome color={colors.white} name={iconPlay} />}
                   iconSize={64}
-                  onPress={this.togglePlay}
+                  onPress={ () => this.togglePlay(isPlaying)}
                 />
               </View>
               <TouchIcon
@@ -168,4 +153,9 @@ const styles = StyleSheet.create({
   }
 });
 
-export default ModalMusicPlayer;
+const mapStateProps = (state) => {
+  const {audioBook: {selectedAudio} } = state;
+  return {selectedAudio};
+}
+
+export default withNavigation(connect(mapStateProps)(ModalMusicPlayer));
