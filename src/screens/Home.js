@@ -112,7 +112,7 @@ const mapStateProps = (state) => {
   logger.info('Books update received from redux store.');
   const {audioBook: {books} } = state;
   books.forEach(book => {
-   logger.info(`---COVER_URI: ${book.front_cover_path}`)
+   logger.fine(`[Home.js mapStateProps] COVER_URI: ${book.front_cover_path}`)
   });
   return {books};
 }
