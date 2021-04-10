@@ -13,10 +13,11 @@ const AnbabianDB = 'anbabian.db';
 
 export const createBookTable = 'CREATE TABLE IF NOT EXISTS book (id  TEXT PRIMARY KEY, author \
                                                TEXT not NULL, title TEXT NOT NULL, synopsis TEXT);'
-export const createAudiofilesTable = 'CREATE TABLE IF NOT EXISTS audiofiles (id  \
-   INTEGER PRIMARY KEY, path  TEXT NOT NULL, url  TEXT NOT NULL, name TEXT NOT NULL, \
-   paused_at INTEGER, book_id  TEXT not NULL, FOREIGN KEY (book_id) REFERENCES book(id) \
-   ON DELETE CASCADE);'
+export const createAudiofilesTable = 'CREATE TABLE IF NOT EXISTS audiofiles (chapter_id  TEXT, \
+   path  TEXT NOT NULL, url  TEXT NOT NULL, name TEXT NOT NULL, \
+   paused_at INTEGER, book_id  TEXT not NULL, \
+   FOREIGN KEY (book_id) REFERENCES book(id) ON DELETE CASCADE, \
+   PRIMARY KEY (chapter_id) );'
 export const createFrontcoverTable = 'CREATE TABLE IF NOT EXISTS frontcover (id  \
   INTEGER PRIMARY KEY, path  TEXT NOT NULL, url  TEXT NOT NULL, book_id  TEXT not NULL, \
   FOREIGN KEY (book_id) REFERENCES book(id) ON DELETE CASCADE);';
