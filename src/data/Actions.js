@@ -15,10 +15,10 @@ const audioSelected = isSelected => {
   });
 };
 
-const audioLoaded = isLoaded => {
+const audioLoaded = loadingStates => {
   store.dispatch({
     type: AUDIO_LOADED,
-    audioLoaded: isLoaded
+    loadingStates: loadingStates
   });
 };
 const bookSelected = (isSelected, book) => {
