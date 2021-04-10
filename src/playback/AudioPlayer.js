@@ -1,13 +1,13 @@
 import TrackPlayer from 'react-native-track-player';
-import {getLocalAudioURL, getLocalCoverImageURL} from '../data/AudioBook';
+import {getLocalAudioURL, getLocalCoverImageURL, generateChapterId} from '../data/AudioBook';
 import Logger from '../utils/Logger';
 import { audioLoaded } from '../data/Actions';
-import * as Crypto from 'expo-crypto';
 
 class RNTrackPlayer {
 
     constructor() {
         this.audioPlayerInitialized = false;
+        this.currentTrakcId = null;
     }
 
     async init() {
@@ -29,22 +29,19 @@ class RNTrackPlayer {
     }
     }
 
-    async generateChapterId(audioPath) {
-        const id = await Crypto.digestStringAsync(
-            Crypto.CryptoDigestAlgorithm.MD5,
-            `${audioPath}`,
-            { encoding: Crypto.CryptoEncoding.HEX }
-        );
-        return id;
-    }
-
     async AudioPlayerAddChpater(book, chapter) {
         if (!this.audioPlayerInitialized)
             await this.init();
-
+        // Reset the track player. Currently deals with one audio at a time.
+        /*if (this.currentTrakcId) {
+            Logger.info(`[AudioPlayer.js AudioPlayerAddChapter] removing previous track ${this.currentTrakcId}.`);
+            await TrackPlayer.remove([this.currentTrakcId]);
+            Logger.info(`[AudioPlayer.js AudioPlayerAddChapter] player emptied.`);
+        }*/
+        audioLoaded({isLoading: true, isLoaded: false, isPlaying: false});
         const localPath = await getLocalAudioURL(book, chapter);
         const localCoverImagerPath = await getLocalCoverImageURL(book);
-        const id = await this.generateChapterId(localPath);
+        const id = await generateChapterId(chapter);
         await TrackPlayer.add({
             id: id,
             url: localPath,
@@ -54,18 +51,30 @@ class RNTrackPlayer {
             artist: book.author,
             artwork: localCoverImagerPath,
         });
-        audioLoaded(true);
-        Logger.info(`Chapter ${chapter.chapter} of ${book.title} loaded.`);
+
+        if(this.currentTrakcId) {
+            await this.pause();
+            Logger.fine(`[AudioPlayer.js AudioPlayerAddChapter] Skipping to next track.`);
+            await TrackPlayer.skipToNext(); // Instead of this we shold clear the track ?
+            Logger.fine(`[AudioPlayer.js AudioPlayerAddChapter] Removing previous track.`);
+            await TrackPlayer.remove([this.currentTrakcId]);
+        }
+        this.currentTrakcId = id;
+
+        audioLoaded({isLoading: false, isLoaded: true, isPlaying: false});
+        Logger.info(`[AudioPlayer.js AudioPlayerAddChapter] Loaded ${localPath}.`);
     }
 
     play() {
         TrackPlayer.play();
-        Logger.info(`TrackPlayer set to play.`);
+        audioLoaded({isPlaying: true});
+        Logger.info(`[AudioPlayer.js play] TrackPlayer set to play.`);
     }
 
     pause() {
         TrackPlayer.pause();
-        Logger.info(`TrackPlayer paused.`);
+        audioLoaded({isPlaying: false});
+        Logger.info(`[AudioPlayer.js pause] TrackPlayer paused.`);
     }
 }
 
