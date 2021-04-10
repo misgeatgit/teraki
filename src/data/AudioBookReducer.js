@@ -20,6 +20,7 @@ const INITIAL_STATE = {
     synopsis: ''
   },
   selectedAudio: {
+    isLoading: false,
     isLoaded: false,
     isPlaying: false,
     currentTime: 0
@@ -36,7 +37,7 @@ const AudioBookReducer = (state = INITIAL_STATE, action) => {
         ...state,
         selectedAudio: {
           ...state.selectedAudio,
-          isLoaded: action.audioLoaded
+          ...action.loadingStates
         }
       };
     case BOOK_SELECTED:
@@ -46,9 +47,9 @@ const AudioBookReducer = (state = INITIAL_STATE, action) => {
         selectedBook: { ...action.message.book }
       };
     case BOOKS_LOADED:
-      logger.info(`New book ${JSON.stringify(action.books)}`)
+      logger.fine(`[AudioBookReducer.js BOOKS_LOADED] New book ${JSON.stringify(action.books)}`)
+      logger.info(`[AudioBookReducer.js BOOKS_LOADED] New books loaded.`)
       updatedBookList = [...state.books, ...action.books]
-      logger.info(`BookList updated. \n ${JSON.stringify(updatedBookList.map(book => {return book.title;} ))}`)
       return { ...state, books: updatedBookList };
     case PLAY_PAUSE_STATUS:
       return {
