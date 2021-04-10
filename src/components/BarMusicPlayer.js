@@ -146,7 +146,6 @@ const styles = StyleSheet.create({
 
 const mapStateProps = (state) => {
   const {audioBook: {selectedAudio: {isLoaded}} } = state;
-  console.log(`isLoaded: ${isLoaded}`)
   return {isLoaded};
 }
 

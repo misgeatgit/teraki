@@ -1,5 +1,5 @@
 import SQLite from 'react-native-sqlite-storage';
-
+import Logger from './utils/Logger';
 const BASE_URL = 'http://localhost:8000/api/v1.0/';
 
 const ENDPOINTS = {
@@ -26,9 +26,11 @@ const db = SQLite.openDatabase(
     name: 'testing.db',
     location: 'default',
   },
-  () => { },
+  () => {
+    Logger.info(`[Settings.js db] db created successfully.`);
+  },
   error => {
-    console.log("ERROR: " + error);
+    Logger.error(`[Settings.js db] ${JSON.stringify(error)}`);
   }
 );
 
@@ -50,10 +52,14 @@ const execQuery = (db, queryParamPairArray) => new Promise((resolve, reject) => 
 const initDB = async () => {
   const atomicCreateQueries = [{ query: createBookTable, params: [] },
   { query: createAudiofilesTable, params: [] },
-  { query: createFrontcoverTable, params: [] }]
-  const status = await execQuery(db, atomicCreateQueries);
-  console.log(`*****Created DB ${JSON.stringify(status)}`);
+  { query: createFrontcoverTable, params: [] }];
+  try {
+    const status = await execQuery(db, atomicCreateQueries);
+    Logger.info(`[Settings.js initDB] Tables created successfully.`)
+  } catch (e) {
+    Logger.error(`[Settings.js initDB]${JSON.stringify(e)}.`)
+  }
 }
 
 
-export { BASE_URL, db, execQuery, ENDPOINTS, initDB};
+export { BASE_URL, db, execQuery, ENDPOINTS, initDB };
