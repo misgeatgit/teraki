@@ -60,7 +60,7 @@ async function persistChapter(chapter, bookId) {
   try {
     const atomicInsertQuery = [{
       query: insertAudioFile,
-      params: [path, chapter.audio_file, chapter.name, bookId]
+      params: [path, chapter.audio_file, chapter.chapter, bookId]
     }];
     const result = await execQuery(db, atomicInsertQuery);
     logger.info(`---Select result ${JSON.stringify(result)}`);
@@ -99,7 +99,7 @@ async function generateBookId(book) {
 async function getLocalAudioURL(book, chapter) {
   try {
     const bookId = await generateBookId(book);
-    const selectChapterQuery = `SELECT * FROM audiofiles WHERE book_id=${bookId}`;
+    const selectChapterQuery = `SELECT * FROM audiofiles WHERE book_id='${bookId}'`;
     const result = await execQuery(db, [{ query: selectChapterQuery, params: [] }]);
     let path = '';
     if (result.rows.length < 1) {
@@ -231,6 +231,7 @@ export {
   download,
   fetchMockData,
   generateBookId,
+  getLocalAudioURL,
   getLocalCoverImageURL,
   preFetch,
   fetchAll

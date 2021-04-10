@@ -246,6 +246,8 @@ class Album extends React.Component {
                   key={index.toString()}
                   onPress={this.changeSong}
                   songData={{
+                    book: book,
+                    chapter: chapter,
                     album: book.title,
                     artist: book.author,
                     image: book.front_cover_path,

@@ -6,7 +6,7 @@ export const logLevel = {
 }
 
 class Logger {
-    constructor(level=logLevel.DEBUG) {
+    constructor(level=logLevel.ERROR) {
         this.level = level;
     }
 

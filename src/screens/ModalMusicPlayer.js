@@ -9,7 +9,7 @@ import { colors, device, func, gStyle, images } from '../constants';
 import ModalHeader from '../components/ModalHeader';
 import TouchIcon from '../components/TouchIcon';
 
-import ExpoAdioPlayer from '../playback/playback';
+import AudioPlayer from '../playback/AudioPlayer';
 
 class ModalMusicPlayer extends React.Component {
   constructor(props) {
@@ -33,9 +33,9 @@ class ModalMusicPlayer extends React.Component {
 
   _onPlayPausePressed = () => {
     if (this.state.paused) {
-      ExpoAdioPlayer.pause();
+      AudioPlayer.pause();
     } else {
-      ExpoAdioPlayer.play();
+      AudioPlayer.play();
     }
   };
   toggleFavorite() {
