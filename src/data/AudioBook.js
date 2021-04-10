@@ -6,20 +6,24 @@ import {
   execQuery
 } from '../Settings';
 import { booksLoaded } from './Actions';
+import Logger from '../utils/Logger';
 
 const books = require('../mockdata/books.json');
 
 async function download(url) {
   return new Promise((resolve, reject) => {
+    Logger.info(`[AudioBook.js download] Downloading ${url}`);
     FileSystem.downloadAsync(
       url,
       // TODO make sure there is no name collision.
       FileSystem.documentDirectory + url.split('/').pop()
     )
       .then(({ uri }) => {
+        Logger.info(`[AudioBook.js download] Downloaded to ${uri}`);
         resolve(uri);
       })
       .catch(error => {
+        Logger.info(`[AudioBook.js download] ${JSON.stringify(error)}`);
         reject(error);
       });
   });
@@ -27,6 +31,8 @@ async function download(url) {
 
 async function persistBook(books) {
   logger.info(`Persisting books.`);
+  const funcName = 'AudioBook.js persistBook';
+
   const insertQuery = `INSERT INTO book (id, author, title, synopsis) values (?, ?, ?, ?)`;
   Object.values(books).forEach(async book => {
     if (!book.author) book.author = 'various';
@@ -46,40 +52,42 @@ async function persistBook(books) {
         { query: insertQuery, params: [id, book.author, book.title, book.synopsis] }
       ]
       const result = await execQuery(db, atomicInsertQueries);
-      logger.info(`Insert result ${JSON.stringify(result)}`);
+      logger.info(`${funcName} Insert result ${JSON.stringify(result)}`);
     } catch (e) {
-      logger.error(`${JSON.stringify(e)}`);
+      logger.error(`${funcName} ${JSON.stringify(e)}`);
     }
   });
 }
 
-async function persistChapter(chapter, bookId) {
-  logger.info(`Persisting Chapter.`);
+async function persistChapter(chapter, chapterId, bookId) {
+  const funcName = '[AudioBook.js persistChapter]';
+  logger.info(`${funcName} Persisting Chapter.`);
   const path = await download(chapter.audio_file);
-  const insertAudioFile = `INSERT INTO audiofiles (path, url, name, book_id) values (?, ?, ?, ?)`;
+  const insertAudioFile = `INSERT INTO audiofiles (chapter_id, path, url, name, book_id) values (?, ?, ?, ?, ?)`;
   try {
     const atomicInsertQuery = [{
       query: insertAudioFile,
-      params: [path, chapter.audio_file, chapter.chapter, bookId]
+      params: [chapterId, path, chapter.audio_file, chapter.chapter, bookId]
     }];
     const result = await execQuery(db, atomicInsertQuery);
-    logger.info(`---Select result ${JSON.stringify(result)}`);
+    logger.info(`${funcName} Select result ${JSON.stringify(result)}`);
     return path;
   } catch (e) {
-    logger.error(`---${JSON.stringify(e)}`);
+    logger.error(`${funcName} ${JSON.stringify(e)}`);
   }
 }
 
 async function persistFrontCover(url, bookId) {
   logger.info(`Persisting front cover url:${url}`);
+  const funcName = '[AudioBook.js persistFrontCover]';
   try {
     const path = await download(url);
     const insertQuery = `INSERT INTO frontcover (path, url, book_id) values (?, ?, ?)`;
     const result = await execQuery(db, [{ query: insertQuery, params: [path, url, bookId] }]);
-    logger.info(`---Select result ${JSON.stringify(result)}`);
+    logger.info(`${funcName} Select result ${JSON.stringify(result)}`);
     return path;
   } catch (e) {
-    logger.error(`---${JSON.stringify(e)}`);
+    logger.error(`${funcName} ${JSON.stringify(e)}`);
   }
 }
 
@@ -92,68 +100,81 @@ async function generateBookId(book) {
 
   return fkey;
 }
+
+async function generateChapterId(chapter) {
+        const id = await Crypto.digestStringAsync(
+            Crypto.CryptoDigestAlgorithm.MD5,
+            `${chapter.audio_file}`,
+            { encoding: Crypto.CryptoEncoding.HEX }
+        );
+        return id;
+    }
+
 /*
      @param chapter {audio_file:'', chapter:''}
      @returns local url
     */
 async function getLocalAudioURL(book, chapter) {
+  const funcName = '[AudioBook.js getLocalAudioURL]';
   try {
-    const bookId = await generateBookId(book);
-    const selectChapterQuery = `SELECT * FROM audiofiles WHERE book_id='${bookId}'`;
+    logger.fine(`${funcName} Book: ${JSON.stringify(book)} Chapter: ${JSON.stringify(chapter)}}`)
+    const chapterId = await generateChapterId(chapter);
+    const bookId = await generateChapterId(book);
+    const selectChapterQuery = `SELECT * FROM audiofiles WHERE book_id='${bookId}' AND chapter_id='${chapterId}'`;
     const result = await execQuery(db, [{ query: selectChapterQuery, params: [] }]);
     let path = '';
     if (result.rows.length < 1) {
-      logger.info(`AudioFile not found in local directory.
+      logger.info(`${funcName} AudioFile not found in local directory.
     Downloading and persisting to local storage.`);
-      path = await persistChapter(chapter, bookId);
+      path = await persistChapter(chapter, chapterId, bookId);
     } else {
-      logger.info('Audiofile found in local resource dir.');
-      path = result.rows[0].item[0];
+      logger.info(`${funcName} Audiofile found in local resource dir.`);
+      path = result.rows.item(0).path;
     }
     
     return path;
   } catch (e) {
-    logger.error(`${JSON.stringify(e)}`);
+    logger.error(`${funcName} ${JSON.stringify(e)}`);
   }
 }
 
 async function getLocalCoverImageURL(book) {
-  const funcName = 'getLocalCoverImageURL' 
-  logger.info(`[${funcName}] Fetching local cover image url.`);
+  const funcName = '[AudioBook.js getLocalCoverImageURL]' 
+  logger.info(`${funcName} Fetching local cover image url.`);
  try {
     const bookId = await generateBookId(book);
     const selectChapterQuery = `SELECT * FROM frontcover WHERE book_id='${bookId}'`;
     const result = await execQuery(db, [{ query: selectChapterQuery, params: [] }]);
     var path = '';
     if (result.rows.length < 1) {
-      logger.info(`---[${funcName}] Cover image not found in local directory.
+      logger.info(`${funcName} Cover image not found in local directory.
     Downloading and persisting to local storage.`);
       path = await persistFrontCover(book.front_cover, bookId);
     } else {
+      logger.info(`${funcName} Cover image found in local resource dir. ${JSON.stringify(path)}`);
       path = result.rows.item(0).path;
-      logger.info(`---[${funcName}] Cover image found in local resource dir. ${JSON.stringify(path)}`);
     }
     return path;
   } catch (e) {
-    logger.error(`[${funcName}] ${JSON.stringify(e)}`);
+    logger.error(`${funcName} ${JSON.stringify(e)}`);
   }
 
 }
 
 async function downloadFrontCover(books, downloadNotify) {
-  const funcName = 'downloadFrontCover';
-  logger.info(`[${funcName}] Persisting books to db.`);
+  const funcName = '[AudioBook.js downloadFrontCover]';
+  logger.info(`${funcName} Persisting books to db.`);
   try {
     const localBooks = Object.values(books).map(async book => {
       const path = await getLocalCoverImageURL(book);
-      logger.info(`---[${funcName}] Persisted to ${path}`);
+      logger.info(`${funcName} Persisted to ${path}`);
       const newBook = { ...book, front_cover_path: path };
       downloadNotify(newBook);
       return newBook;
     });
     return localBooks;
   } catch (e) {
-    logger.error(`[${funcName}] ${JSON.stringify(e)}`);
+    logger.error(`${funcName} ${JSON.stringify(e)}`);
   }
 }
 
@@ -231,6 +252,7 @@ export {
   download,
   fetchMockData,
   generateBookId,
+  generateChapterId,
   getLocalAudioURL,
   getLocalCoverImageURL,
   preFetch,
