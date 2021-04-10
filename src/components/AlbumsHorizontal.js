@@ -10,8 +10,8 @@ import {
   View
 } from 'react-native';
 import { withNavigation } from 'react-navigation';
-import { colors, gStyle, images } from '../constants';
-import {generateBookId, getLocalCoverImageURL} from '../data/AudioBook';
+import { colors, gStyle} from '../constants';
+import {generateBookId} from '../data/AudioBook';
 
 const AlbumsHorizontal = ({ books, heading, navigation, tagline, endReachedCB }) => (
   <View style={styles.container}>
