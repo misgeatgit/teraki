@@ -7,6 +7,7 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { withNavigation } from 'react-navigation';
 import { FontAwesome } from '@expo/vector-icons';
 import { colors, device, gStyle } from '../constants';
+import Logger from '../utils/Logger';
 
 class BarMusicPlayer extends React.Component {
   constructor(props) {
@@ -14,13 +15,10 @@ class BarMusicPlayer extends React.Component {
 
     this.state = {
       favorited: false,
-      paused: true,
       isLoaded: false // for sound
     };
     this.toggleFavorite = this.toggleFavorite.bind(this);
     this.togglePlay = this.togglePlay.bind(this);
-    this.toggleLoading=this.toggleLoading.bind(this);
-    //this.props.eventSubscribers.playBackLoaded.push(this.toggleLoading);
   }
 
   toggleFavorite() {
@@ -29,34 +27,20 @@ class BarMusicPlayer extends React.Component {
     }));
   }
 
-  toggleLoading(loaded){
-    this.setState(() => ({isLoaded:loaded}));
-    // Reset play
-    this.setState(()=>({paused: true}));
-  }
-
-  togglePlay() {
-    this.setState(prev => ({
-      paused: !prev.paused
-    }),
-      () => {
-        const { paused } = this.state;
-        const { playPauseCallBack } = this.props;
-        // This is a bit misleading it should have been !paused FIXME
-        playPauseCallBack(paused);
-      });
+  togglePlay(isPlaying) {
+    const { playPauseCallBack } = this.props;
+    playPauseCallBack(isPlaying);
   }
 
   render() {
-    const { navigation, song, eventSubscribers, isLoaded } = this.props;
-    const { paused} = this.state;
-
-    const iconPlay = paused ? 'play-circle' : 'pause-circle';
+    const { navigation, song, eventSubscribers, selectedAudio } = this.props;
+    const {isPlaying} = selectedAudio;
+    Logger.info(`[BarMusicPlayer.js render] isPlaying: ${isPlaying}`);
 
     return (
       <TouchableOpacity
         activeOpacity={1}
-        onPress={() => navigation.navigate('ModalMusicPlayer',{eventSubscribers, paused})}
+        onPress={() => navigation.navigate('ModalMusicPlayer',{eventSubscribers})}
         style={styles.container}
       >
         <TouchableOpacity
@@ -71,18 +55,18 @@ class BarMusicPlayer extends React.Component {
           <Text style={styles.artist}>{song.album}</Text>
         </View>
         )}
-        {isLoaded &&
+        {selectedAudio.isLoaded &&
         // eslint-disable-next-line react/jsx-wrap-multilines
         <TouchableOpacity
           activeOpacity={gStyle.activeOpacity}
           hitSlop={{ bottom: 10, left: 10, right: 10, top: 10 }}
-          onPress={this.togglePlay}
+          onPress={() => this.togglePlay(isPlaying)}
           style={styles.containerIcon}
         >
-          <FontAwesome color={colors.white} name={iconPlay} size={28} />
+          <FontAwesome color={colors.white} name={ isPlaying ? 'pause-circle' : 'play-circle'} size={28} />
         </TouchableOpacity>
         }
-        {!isLoaded &&
+        { (!selectedAudio.isLoaded && selectedAudio.isLoading) &&
           <ActivityIndicator size="small" color="white" style={styles.activityIndicator} />
         }
       </TouchableOpacity>
@@ -145,8 +129,8 @@ const styles = StyleSheet.create({
 });
 
 const mapStateProps = (state) => {
-  const {audioBook: {selectedAudio: {isLoaded}} } = state;
-  return {isLoaded};
+  const {audioBook: {selectedAudio} } = state;
+  return {selectedAudio};
 }
 
 export default withNavigation(connect(mapStateProps)(BarMusicPlayer));
